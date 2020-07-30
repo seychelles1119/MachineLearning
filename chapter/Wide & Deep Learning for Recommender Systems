@@ -1,0 +1,119 @@
+
+ABSTRACT
+Memorization 
+→ wide
+effectiv, interpretabble
+Generalization 
+→ deep
+sparse 피쳐들에 대한 학습을 위해 저차원의 dense한 임베딩통해 이제까지 나타나지 않았던 피쳐 조합을 더 일반화 할 수 있음
+
+
+
+
+1. INTRODUCITON
+Memorization
+빈번하게 동시 출현한 경우 혹은 과거 데이터를 이용
+Generalization
+상관성에 대한 '전이성' 혹은 과거에 나타나지 않은(적게 나타난) 새로운 피려들에 대한 조합
+앞서의 memorization에 기반한 추천의 경우보다 topical. 
+diversity
+상대적으로 덜 granular 피쳐를 사용해 추가될 수 있음 but, 매뉴얼 피쳐 엔지니어링이 필요한 경우가 있음
+cross-product 변환의 한계는 학습데이터에서 나타나지 않은 페어에 대해서는 일반화하지 않는다는 것음
+유저가 구체적인 선호를 갖거나 좁은 appeal를 갖는 니치 아이템과 같이 근본적인 쿼리-아이템 행렬이 sparse하고 high-rank일때 쿼리 아이템에 대한 효과적인 저차원 표현을 학습하는 것은 어려움
+→ 이러한 경우 대부분의 쿼리-아이템 페어들 사이에는 상호작용이 없을테지만.. dense 임베딩은 모든 쿼리-아이템 페어에 대해서 0이아닌 예측을 할 수 있음. 그리고 일반화를 넘어서서 관련성이 낮은 추천을 할 수도 있음.
+→ 반대로, cross-product은 훨씬 적은 파라미터로 이러한 exception rule을 memorize할 수 있음
+
+
+2. RECOMMENDER SYSTEM OVERVIEW
+
+retrieval.
+머신러닝 모델 + human defined rule
+ranking system
+모든 아이템들에 대한 점수로 등급화
+→ 본 논문에서는 wide & deep learning framework를 사용한 랭킹모델에 포커싱
+
+
+3. WIDE & DEEP LEARNING
+
+3.1 The Wide Component
+
+일반화 선형 모형의 대표적인 수식.
+피쳐셋은 raw input feature들과 transformed feature등을 포함함.
+
+
+3.2 The Deep Component
+
+FFNN
+범주형 피쳐들의 경우 기존 inputdms 문자열
+→ sparse하고 고차원이 이러한 categorical 피쳐들은 저차원적이고 dense한 (실수)의 벡터로 변환 : 임베딩 벡터!
+임베딩 벡터
+→ 처음에는 무작위로 초기화된 다음 모형을 학습하는 동안 최종 손실 함수를 최소화 하기 위해 update.
+→ 이같은 저차원 dense한 임베딩 벡터들은 이후에 forward를 지나 신경망의 은닉층에 입력되어짐.
+
+
+3.3 Joint Tranining of Wide & Deep Model
+
+앙상블과의 차이점/비교점
+결국 loss를 공유하느냐 공유하지 않느냐
+즉, 앙상블은 개별 모델이 따로 훈련. 이들에 대한 예측?은 학습때가 아닌 추론때 결합!
+반대로 joint training은 학습시간에 가중치 뿐만아니라 wide, deep 파트를 동시에 고려하여 모든 파라미터를 동시에 최적화!!
+cf. 
+앙상블 → 따로 훈련하기 때문에, 합리적인 정확도 달성을 위해서는 일반적으로 각 개별 모델 크기가 크다.
+joint training → 풀사이즈 모델보다 적은 수의 cross-prod. feature transformation으로 deep 파트의 약점을 보완하기만 하면 됨
+Wide & Deep 모델의 joint training은 minibatch stochastic 최적화를 사용. 모델의 wide와 deep 파트의 output의 gradient를 동시에 역전파하여 동작한다.
+
+
+4. SYSTEM IMPLEMENTATION
+
+4.1 Data Generation
+
+impressed app의 셜치 → 1 or 0
+Category → IDs
+최소출현 이상을 만족하는 모든 문자열 피쳐에 대해 ID 공간을 계산
+n_q 분위수로 나누어진 누적분포함수로 피쳐 x를 매핑
+→ i번째 분위수에서의 x값들에 대한 정규화 값은.. 
+(i - 1) / (n_q - 1)
+
+
+4.2 Model Training
+
+input 레이어는 학습데이터와 어휘를 입력으로 받음. 레이블과 함께 sparse & dense 한 피쳐를 생성
+wide comp.
+impression 앱과 유저가 설치한 앱의 cross-prod.transformations로 구성.
+deep comp.
+32차원 임베딩 벡터는 각각의 카테고리 피쳐에 대해 학습됨
+dense 피쳐들을 이용한 모든 임베딩을 concatenate. 약 1200차원의 dense 한 벡터가 생성됨.
+그다음 연결된 벡터는 3개의 ReLU레이어와 로지스틱 output유닛으로 공급됨.
+약 5천억개 이상의 예제들로 훈련됨.
+cf. warm-starting system
+새로운 훈련 데이터 집합이 도착할때마다 모델의 학습을 반복해야하는 문제.
+이전의 선형 모델 가중치와 임베딩을 가지고 새로운 모델을 초기화하는 warm starting시스템을 구현.
+
+
+
+
+4.3 Model Serving
+
+
+
+5. EXPERIMENT RESULTS
+
+5.1 App Acquisitions
+
+5.2 Serving Performance
+
+
+
+6. RELATED WORK
+
+
+
+7. CONCLUSION
+
+Wide 선형 모델은 cross-prod. feature transformations를 사용하여 sparse feature interactions를 효과적으로 기억할 수 있는 반면, 
+deep neural networks는 저차원 임베딩을 통해 이전에 관찰되지 않은 feature interactions을 일반화할 수 있음.
+본 논문에서는 모델의 두 타입의 장점을 결합한 wide & deep learning 프레임워크를 소개함.
+온라인 실험 결과에 따르면 wide & deep 모델이 wide-only와 deep-only 모델과 비교하여 app acquisitions 측면에서 상당한 개선을 이루어냄.
+
+
+
